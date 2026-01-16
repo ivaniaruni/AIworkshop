@@ -1,110 +1,156 @@
 const root = document.getElementById("app");
 
 root.innerHTML = `
-  <h1>Sesión I — LLMs en una Web (Cerebras)</h1>
-  <p class="small">Objetivo: convertir una incidencia en un ticket (JSON) usando un backend seguro.</p>
-
   <div class="card">
+    <h2>Analizar reporte policial</h2>
+
     <div class="row">
-      <button id="exampleBtn">Cargar ejemplo</button>
-
-      <label class="small">
-        Temperature:
-        <input id="temperature" type="number" min="0" max="1.5" step="0.1" value="0.2" />
+      <label>
+        Tipo de reporte
+        <select id="report_type">
+          <option value="">Selecciona...</option>
+          <option value="robo">Robo</option>
+          <option value="agresion">Agresión</option>
+          <option value="trafico">Incidente de tráfico</option>
+        </select>
       </label>
 
-      <label class="small">
-        Max tokens:
-        <input id="maxTokens" type="number" min="50" max="1000" step="50" value="350" />
+      <label>
+        Ámbito / localización
+        <input id="location_scope" type="text" placeholder="Distrito, barrio..." />
       </label>
-
-      <button id="runBtn">Ticketify</button>
-      <button id="modelsBtn">Listar modelos</button>
     </div>
 
-    <textarea id="incident" placeholder="Pega aquí una incidencia 'a lo usuario'..."></textarea>
+    <div class="row">
+      <label>
+        Fecha/hora incidente (opcional)
+        <input id="incident_datetime" type="datetime-local" />
+      </label>
+
+      <label>
+        Ventana temporal (opcional)
+        <input id="time_window" type="text" placeholder="p.ej. última semana" />
+      </label>
+    </div>
+
+    <label>
+      Texto del reporte
+      <textarea id="report_text" placeholder="Pega aquí el texto del reporte policial"></textarea>
+    </label>
+
+    <button id="analyze-btn">Analizar anomalías</button>
+
+    <div id="error" class="small"></div>
   </div>
 
-  <div class="card">
-    <h3>Salida (raw)</h3>
-    <pre id="raw"></pre>
-    <div class="small" id="usage"></div>
-  </div>
+    <div id="result" class="card" style="display:none;">
+    <div id="badge"></div>
+    <div id="confidence"></div>
+    <ul id="anomalies-list"></ul>
 
-  <div class="card">
-    <h3>Validación JSON</h3>
-    <pre id="parsed"></pre>
+    <div class="result-footer">
+      <label class="small toggle-json-label">
+        <input type="checkbox" id="toggle-json" />
+        Ver JSON (debug)
+      </label>
+    </div>
+    <pre id="raw-json" style="display:none;"></pre>
   </div>
 `;
 
-const incidentEl = document.getElementById("incident");
-const tempEl = document.getElementById("temperature");
-const maxEl = document.getElementById("maxTokens");
-const rawEl = document.getElementById("raw");
-const parsedEl = document.getElementById("parsed");
-const usageEl = document.getElementById("usage");
+const reportTextEl = document.getElementById("report_text");
+const reportTypeEl = document.getElementById("report_type");
+const locationScopeEl = document.getElementById("location_scope");
+const incidentDatetimeEl = document.getElementById("incident_datetime");
+const timeWindowEl = document.getElementById("time_window");
+const analyzeBtn = document.getElementById("analyze-btn");
+const errorEl = document.getElementById("error");
 
-const EXAMPLES = [
-  "no me deja entrar. pongo la contraseña y se queda cargando. en el movil sí. en el pc no. pantalla blanca. urgent",
-  "al crear tarea nueva, a veces se borra el texto si pongo fecha y luego cambio el proyecto",
-  "la página de perfil tarda 10 segundos en cargar. ayer iba bien, hoy imposible"
-];
+const resultCard = document.getElementById("result");
+const badgeEl = document.getElementById("badge");
+const confidenceEl = document.getElementById("confidence");
+const anomaliesList = document.getElementById("anomalies-list");
+const toggleJson = document.getElementById("toggle-json");
+const rawJsonEl = document.getElementById("raw-json");
 
-document.getElementById("exampleBtn").addEventListener("click", () => {
-  incidentEl.value = EXAMPLES[Math.floor(Math.random() * EXAMPLES.length)];
-});
+analyzeBtn.addEventListener("click", async () => {
+  errorEl.textContent = "";
 
-document.getElementById("runBtn").addEventListener("click", async () => {
-  rawEl.textContent = "";
-  parsedEl.textContent = "";
-  usageEl.textContent = "";
-
-  // ❌ BUG INTENCIONAL (SyntaxError real): falta una coma después de incidentText
-  // Arreglo en clase: añade una coma al final de la línea "incidentText: incidentEl.value,"
   const payload = {
-    incidentText: incidentEl.value,
-    temperature: Number(tempEl.value),
-    maxTokens: Number(maxEl.value)
+    report_text: reportTextEl.value,
+    report_type: reportTypeEl.value,
+    location_scope: locationScopeEl.value || null,
+    incident_datetime: incidentDatetimeEl.value || null,
+    time_window: timeWindowEl.value || null,
   };
 
+  if (!payload.report_text.trim() || !payload.report_type.trim()) {
+    errorEl.textContent = "report_text y report_type son obligatorios";
+    return;
+  }
+
+  analyzeBtn.disabled = true;
+  analyzeBtn.textContent = "Analizando...";
   try {
-    const r = await fetch("/api/ticket", {
+    const res = await fetch("/api/police-anomalies", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
-    const data = await r.json();
-    if (!r.ok) throw new Error(`API error:\n${JSON.stringify(data, null, 2)}`);
-
-    rawEl.textContent = data.content || "";
-
-    if (data.usage) {
-      usageEl.textContent = `usage: prompt=${data.usage.prompt_tokens}, completion=${data.usage.completion_tokens}, total=${data.usage.total_tokens}`;
+    const body = await res.json();
+    if (!res.ok) {
+      console.error(body);
+      errorEl.textContent = body.error || "Error en el análisis";
+      return;
     }
 
-    try {
-      const obj = JSON.parse(data.content);
-      parsedEl.textContent = "✅ JSON.parse OK\n\n" + JSON.stringify(obj, null, 2);
-    } catch (e) {
-      parsedEl.textContent = "❌ JSON.parse falló\n" + e.message;
-    }
-  } catch (e) {
-    rawEl.textContent = "ERROR:\n" + String(e.message || e);
+    renderResult(body.data);
+    rawJsonEl.textContent = JSON.stringify(body.raw, null, 2);
+    resultCard.style.display = "block";
+  } catch (err) {
+    console.error(err);
+    errorEl.textContent = "Error llamando al backend";
+  } finally {
+    analyzeBtn.disabled = false;
+    analyzeBtn.textContent = "Analizar anomalías";
   }
 });
 
-document.getElementById("modelsBtn").addEventListener("click", async () => {
-  rawEl.textContent = "";
-  parsedEl.textContent = "";
-  usageEl.textContent = "";
+function renderResult(data) {
+  const { is_anomalous, confidence, anomalies } = data;
 
-  try {
-    const r = await fetch("/api/models");
-    const data = await r.json();
-    if (!r.ok) throw new Error(`API error:\n${JSON.stringify(data, null, 2)}`);
-    rawEl.textContent = JSON.stringify(data, null, 2);
-  } catch (e) {
-    rawEl.textContent = "ERROR:\n" + String(e.message || e);
-  }
+  badgeEl.textContent = is_anomalous ? "ANOMALÍA" : "OK";
+  badgeEl.className = is_anomalous ? "badge badge-danger" : "badge badge-success";
+
+  const pct = Math.round((confidence || 0) * 100);
+  confidenceEl.textContent = `Confianza: ${pct}%`;
+
+  anomaliesList.innerHTML = "";
+  (anomalies || []).slice(0, 5).forEach((a) => {
+    const li = document.createElement("li");
+    li.className = "anomaly-card";
+    li.innerHTML = `
+      <div class="row">
+        <strong>${a.type}</strong>
+        <span class="severity severity-${a.severity}">${a.severity}</span>
+      </div>
+      <div class="small">
+        ${truncate(a.evidence || "", 160)}
+      </div>
+      <div class="small">
+        Acción recomendada: ${a.recommended_action || "-"}
+      </div>
+    `;
+    anomaliesList.appendChild(li);
+  });
+}
+
+function truncate(text, max) {
+  if (!text) return "";
+  return text.length > max ? text.slice(0, max) + "..." : text;
+}
+
+toggleJson.addEventListener("change", () => {
+  rawJsonEl.style.display = toggleJson.checked ? "block" : "none";
 });

@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -7,8 +7,18 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <main class="layout">
+      <header>
+        <h1>Detector de anomalías en reportes policiales</h1>
+        <p class="subtitle">
+          Introduce los datos del reporte y analiza incoherencias,
+          contradicciones y datos anómalos.
+        </p>
+      </header>
 
-    <script type="module" src="/app.js"></script>
+      <section id="app"></section>
+    </main>
+
+    <script src="app.js"></script>
   </body>
 </html>

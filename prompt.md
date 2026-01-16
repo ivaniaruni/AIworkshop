@@ -1,27 +1,34 @@
 Devuelve SOLO JSON válido (sin markdown, sin texto extra, sin comentarios).
 Idioma: español.
 
-NO inventes datos. Si falta información, usa "unknown" (string) o [] (arrays).
-Si hay ambigüedad, rellena lo que puedas y añade preguntas en "questions_to_user".
+NO inventes datos. Si falta información suficiente en el reporte, explica la incertidumbre en "notes".
+Sé conservador: marca anomalías solo cuando haya indicios razonables (incoherencias, contradicciones, datos imposibles, etc.).
 
 Esquema JSON (campos obligatorios):
 {
-  "title": string,
-  "summary": string,
-  "steps_to_reproduce": string[],
-  "expected": string,
-  "actual": string,
-  "severity": "low" | "medium" | "high",
-  "tags": string[],
-  "questions_to_user": string[]
+  "is_anomalous": boolean,
+  "confidence": number,      // entre 0 y 1
+  "notes": string,
+  "anomalies": [
+    {
+      "type": string,
+      "severity": "low" | "medium" | "high" | "critical",
+      "evidence": string,
+      "recommended_action": string
+    }
+  ]
 }
-
 Criterios:
-- "title" breve (máx 80 caracteres)
-- "summary" 2–3 frases máximo
-- "steps_to_reproduce" pasos numerables (strings cortos)
-- "severity": low si afecta a pocos y hay workaround; medium si molesta mucho; high si bloquea o afecta a muchos
-- "tags": 3 a 6 tags técnicas (ej: "login", "frontend", "performance", "regression", "mobile", "chrome")
+- "is_anomalous": true si detectas al menos 1 anomalía relevante; false si no ves anomalías significativas.
+- "confidence": 0–1 según cuán seguro estás de tu evaluación global.
+- "notes": 2–4 frases máximo explicando por qué crees que hay/no hay anomalías y qué dudas tienes.
+- "severity":
+  - low: anomalías menores o formales.
+  - medium: afecta a la interpretación, pero el reporte sigue siendo usable.
+  - high: anomalías graves que cuestionan la fiabilidad.
+  - critical: anomalías extremas (datos imposibles, contradicciones fuertes, etc.).
+- "evidence": fragmento de texto o explicación breve que muestre dónde está la anomalía.
+- "recommended_action": acción sugerida (p.ej. "Solicitar aclaración al agente redactor", "Verificar fecha/hora en sistemas internos", etc.).
 
-INCIDENCIA (tal cual, sin corregir):
-{{incident_text}}
+REPORTE POLICIAL (tal cual, sin corregir), en formato JSON:
+{{input_json}}
