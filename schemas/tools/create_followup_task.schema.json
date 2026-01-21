@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "student_id": { "type": "string" },
+    "title": { "type": "string" },
+    "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+    "due_date": { "type": "string" }
+  },
+  "required": ["student_id", "title", "priority", "due_date"],
+  "additionalProperties": false
+}

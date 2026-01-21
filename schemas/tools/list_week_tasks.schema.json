@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "student_id": { "type": "string" },
+    "week_id": { "type": "string" }
+  },
+  "required": ["student_id", "week_id"],
+  "additionalProperties": false
+}

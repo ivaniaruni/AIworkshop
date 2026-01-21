@@ -1,0 +1,10 @@
+[
+  {
+    "student_id": "A12",
+    "week_id": "2026-W02",
+    "tasks": [
+      { "title": "Hands-on #4", "status": "pending", "ra": ["RA1", "RA3"] },
+      { "title": "README + ejemplos", "status": "done", "ra": ["RA2"] }
+    ]
+  }
+]

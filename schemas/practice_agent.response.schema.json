@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "conversation_id": { "type": "string" },
+    "mode": { "type": "string", "enum": ["student", "tutor"] },
+    "reply_md": { "type": "string" },
+    "suggested_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "questions_to_user": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": [
+    "conversation_id",
+    "mode",
+    "reply_md",
+    "suggested_actions",
+    "questions_to_user"
+  ],
+  "additionalProperties": false
+}

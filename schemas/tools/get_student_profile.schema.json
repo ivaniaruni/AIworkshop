@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "student_id": { "type": "string" }
+  },
+  "required": ["student_id"],
+  "additionalProperties": false
+}

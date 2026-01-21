@@ -1,0 +1,9 @@
+[
+  {
+    "student_id": "A12",
+    "name": "Alex",
+    "company": "ASATA",
+    "tutor": "María",
+    "goals": ["Terminar hands-on", "Mejorar backend", "Practicar tool calling"]
+  }
+]
